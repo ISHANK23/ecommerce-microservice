@@ -1,0 +1,53 @@
+{
+  "family": "mysql",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "containerDefinitions": [
+    {
+      "name": "mysql",
+      "image": "mysql:8.0",
+      "memory": 512,
+      "portMappings": [
+        {
+          "containerPort": 3306,
+          "hostPort": 3306,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "value": "rootpassword"
+        },
+        {
+          "name": "MYSQL_DATABASE",
+          "value": "ecommerce"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "mysql-data",
+          "containerPath": "/var/lib/mysql"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mysql",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "mysql-data",
+      "host": {
+        "sourcePath": "/data/mysql"
+      }
+    }
+  ]
+}

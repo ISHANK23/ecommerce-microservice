@@ -1,10 +1,11 @@
 "use client";
 
-import { useCart } from "@/context/CartContext";
-import Pay from "@/components/Pay";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
+import Pay from "@/components/Pay";
+import { useCart } from "@/context/CartContext";
 
 const CartPage = () => {
     const { cart, updateQuantity, removeFromCart } = useCart();

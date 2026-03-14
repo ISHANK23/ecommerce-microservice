@@ -2,7 +2,7 @@ import { Kafka } from "kafkajs";
 
 const kafka = new Kafka({
   clientId: "email-service",
-  brokers: ["localhost:9094"],
+  brokers: (process.env.KAFKA_BROKERS || "localhost:9094").split(","),
 });
 
 const consumer = kafka.consumer({ groupId: "email-service-group" });
@@ -35,15 +35,18 @@ const run = async () => {
       eachMessage: async ({ topic, partition, message }) => {
         const value = message.value.toString();
         const { orderId, userId, cart, total, timestamp } = JSON.parse(value);
-        
+
         // Prepare email content
         const userEmail = `user${userId}@example.com`;
         const subject = `Order Confirmation - ${orderId}`;
-        
+
         const itemsList = cart
-          .map((item, idx) => `${idx + 1}. ${item.name} - $${item.price.toFixed(2)}`)
-          .join('\n');
-        
+          .map(
+            (item, idx) =>
+              `${idx + 1}. ${item.name} - $${item.price.toFixed(2)}`,
+          )
+          .join("\n");
+
         const emailBody = `
 Dear Customer,
 
@@ -66,7 +69,7 @@ Thank you for shopping with us!
 Best regards,
 E-Commerce Team
         `;
-        
+
         // Send confirmation email
         sendEmail(userEmail, subject, emailBody);
       },

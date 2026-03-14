@@ -1,7 +1,8 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Image from "next/image";
-import { ShoppingCart, Plus } from "lucide-react";
+
 import { useCart } from "@/context/CartContext";
 
 const ProductCard = ({ product }) => {
