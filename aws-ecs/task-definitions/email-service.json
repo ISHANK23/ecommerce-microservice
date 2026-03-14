@@ -1,0 +1,28 @@
+{
+  "family": "email-service",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "containerDefinitions": [
+    {
+      "name": "email-service",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ecommerce/email-service:latest",
+      "memory": 256,
+      "environment": [
+        {
+          "name": "KAFKA_BROKERS",
+          "value": "kafka:9092"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/email-service",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

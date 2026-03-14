@@ -3,8 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Loader2, Search } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
 import { useState } from "react";
+
+import ProductCard from "@/components/ProductCard";
 
 const Page = () => {
   const [searchTerm, setSearchTerm] = useState("");

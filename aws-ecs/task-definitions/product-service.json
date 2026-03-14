@@ -1,0 +1,51 @@
+{
+  "family": "product-service",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "containerDefinitions": [
+    {
+      "name": "product-service",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ecommerce/product-service:latest",
+      "memory": 256,
+      "portMappings": [
+        {
+          "containerPort": 8001,
+          "hostPort": 8001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "8001"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "mysql"
+        },
+        {
+          "name": "DB_USER",
+          "value": "root"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "value": "rootpassword"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "ecommerce"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/product-service",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
