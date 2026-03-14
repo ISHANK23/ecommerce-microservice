@@ -36,7 +36,7 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -T $EC2_USER@$EC2_HOST << 'ENDSSH'
             echo "📦 Creating backup..."
             cd ~/ecommerce-microservice
             
@@ -49,7 +49,7 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -T $EC2_USER@$EC2_HOST << 'ENDSSH'
             set -e
             
             echo "🚀 Starting production deployment..."
@@ -128,7 +128,7 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           echo "❌ Deployment failed, attempting rollback..."
-          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -T $EC2_USER@$EC2_HOST << 'ENDSSH'
             cd ~/ecommerce-microservice
             git reset --hard HEAD~1
             docker-compose up -d --build
