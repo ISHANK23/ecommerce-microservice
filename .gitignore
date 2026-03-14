@@ -1,0 +1,35 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.pem
+*.log
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Backups
+*.sql
+backups/
+
+# Temporary files
+tmp/
+temp/

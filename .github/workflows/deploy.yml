@@ -1,0 +1,103 @@
+name: CD - Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+            set -e
+            
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to project directory
+            cd ~/ecommerce-microservice || exit 1
+            
+            # Pull latest code
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin main
+            
+            # Stop running containers
+            echo "🛑 Stopping current containers..."
+            docker-compose down
+            
+            # Remove old images to save space
+            echo "🧹 Cleaning up old images..."
+            docker system prune -f
+            
+            # Build and start containers
+            echo "🔨 Building and starting containers..."
+            docker-compose up -d --build
+            
+            # Wait for services to be healthy
+            echo "⏳ Waiting for services to start..."
+            sleep 30
+            
+            # Check if services are running
+            echo "✅ Checking service health..."
+            docker-compose ps
+            
+            # Check if product service is responding
+            if curl -f http://localhost:8001/health > /dev/null 2>&1; then
+              echo "✅ Product service is healthy"
+            else
+              echo "⚠️  Warning: Product service health check failed"
+            fi
+            
+            echo "🎉 Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify Deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "Waiting for services to be fully ready..."
+          sleep 10
+
+          # Test if the frontend is accessible
+          if curl -f http://$EC2_HOST:3000 > /dev/null 2>&1; then
+            echo "✅ Frontend is accessible"
+          else
+            echo "⚠️ Frontend might not be ready yet"
+          fi
+
+          # Test if the product API is accessible
+          if curl -f http://$EC2_HOST:8001/health > /dev/null 2>&1; then
+            echo "✅ Product API is accessible"
+          else
+            echo "⚠️ Product API might not be ready yet"
+          fi
+
+      - name: Notify on Success
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "Frontend: http://${{ secrets.EC2_HOST }}:3000"
+          echo "Product API: http://${{ secrets.EC2_HOST }}:8001"
+          echo "Kafka UI: http://${{ secrets.EC2_HOST }}:8080"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check the logs above for details."

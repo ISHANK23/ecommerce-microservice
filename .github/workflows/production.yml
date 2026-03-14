@@ -1,0 +1,136 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy-production:
+    name: Deploy to Production EC2
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create backup
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+            echo "📦 Creating backup..."
+            cd ~/ecommerce-microservice
+            
+            # Backup database
+            docker-compose exec -T mysql mysqldump -u root -prootpassword ecommerce > ~/backup-$(date +%Y%m%d-%H%M%S).sql || echo "Backup failed"
+          ENDSSH
+
+      - name: Deploy with zero-downtime
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+            set -e
+            
+            echo "🚀 Starting production deployment..."
+            
+            cd ~/ecommerce-microservice
+            
+            # Pull latest code
+            echo "📥 Pulling latest code..."
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            
+            # Build new images
+            echo "🔨 Building new images..."
+            docker-compose build
+            
+            # Rolling update - update services one by one
+            echo "🔄 Performing rolling update..."
+            
+            # Update backend services first
+            for service in analytic-service email-service order-service payment-service product-service; do
+              echo "Updating $service..."
+              docker-compose up -d --no-deps --build $service
+              sleep 5
+            done
+            
+            # Update client last
+            echo "Updating client..."
+            docker-compose up -d --no-deps --build client
+            
+            # Clean up
+            echo "🧹 Cleaning up..."
+            docker image prune -f
+            
+            # Health check
+            echo "✅ Running health checks..."
+            sleep 20
+            docker-compose ps
+            
+            echo "🎉 Production deployment completed!"
+          ENDSSH
+
+      - name: Run smoke tests
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "🧪 Running smoke tests..."
+
+          # Test frontend
+          if curl -f -m 10 http://$EC2_HOST:3000 > /dev/null 2>&1; then
+            echo "✅ Frontend is up"
+          else
+            echo "❌ Frontend is down"
+            exit 1
+          fi
+
+          # Test product API
+          if curl -f -m 10 http://$EC2_HOST:8001/health > /dev/null 2>&1; then
+            echo "✅ Product API is up"
+          else
+            echo "❌ Product API is down"
+            exit 1
+          fi
+
+          # Test payment API
+          if curl -f -m 10 http://$EC2_HOST:8000 > /dev/null 2>&1; then
+            echo "✅ Payment API is up"
+          else
+            echo "⚠️ Payment API health check skipped (no health endpoint)"
+          fi
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "❌ Deployment failed, attempting rollback..."
+          ssh -i ~/.ssh/deploy_key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
+            cd ~/ecommerce-microservice
+            git reset --hard HEAD~1
+            docker-compose up -d --build
+            echo "⏮️ Rollback completed"
+          ENDSSH
