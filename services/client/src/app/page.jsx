@@ -14,7 +14,7 @@ const Page = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const response = await axios.get("http://localhost:8001/api/products");
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/api/products`);
       // Normalize product data to ensure price and stock are numbers
       return response.data.data.map((product) => ({
         ...product,
