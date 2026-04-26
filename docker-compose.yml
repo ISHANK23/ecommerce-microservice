@@ -94,6 +94,7 @@ services:
       - DB_USER=root
       - DB_PASSWORD=rootpassword
       - DB_NAME=ecommerce
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
     depends_on:
       mysql:
         condition: service_healthy
@@ -110,6 +111,7 @@ services:
       - "8000:8000"
     environment:
       - KAFKA_BROKERS=kafka:9092
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
     depends_on:
       kafka:
         condition: service_healthy
