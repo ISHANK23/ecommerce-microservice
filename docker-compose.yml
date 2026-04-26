@@ -164,10 +164,16 @@ services:
     build:
       context: ./services/client
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_PRODUCT_SERVICE_URL=${NEXT_PUBLIC_PRODUCT_SERVICE_URL:-http://localhost:8001}
+        - NEXT_PUBLIC_PAYMENT_SERVICE_URL=${NEXT_PUBLIC_PAYMENT_SERVICE_URL:-http://localhost:8000}
     container_name: client
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_PRODUCT_SERVICE_URL=${NEXT_PUBLIC_PRODUCT_SERVICE_URL:-http://localhost:8001}
+      - NEXT_PUBLIC_PAYMENT_SERVICE_URL=${NEXT_PUBLIC_PAYMENT_SERVICE_URL:-http://localhost:8000}
     depends_on:
       - product-service
       - payment-service

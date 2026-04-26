@@ -18,7 +18,7 @@ const Pay = ({ cart }) => {
     mutationFn: async (cart) => {
       const startTime = Date.now();
       const response = await axios.post(
-        "http://localhost:8000/payment-service",
+        `${process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL}/payment-service`,
         { cart }
       );
       const endTime = Date.now();

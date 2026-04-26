@@ -7,6 +7,15 @@ RUN npm ci
 # Stage 2: Build the application
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Accept build arguments
+ARG NEXT_PUBLIC_PRODUCT_SERVICE_URL
+ARG NEXT_PUBLIC_PAYMENT_SERVICE_URL
+
+# Set as environment variables for Next.js build
+ENV NEXT_PUBLIC_PRODUCT_SERVICE_URL=$NEXT_PUBLIC_PRODUCT_SERVICE_URL
+ENV NEXT_PUBLIC_PAYMENT_SERVICE_URL=$NEXT_PUBLIC_PAYMENT_SERVICE_URL
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
