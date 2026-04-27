@@ -24,23 +24,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate required secrets
-        run: |
-          echo "🔐 Validating required secrets..."
-          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "❌ Error: EC2_SSH_KEY secret is not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.EC2_HOST }}" ]; then
-            echo "❌ Error: EC2_HOST secret is not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.EC2_USER }}" ]; then
-            echo "❌ Error: EC2_USER secret is not set"
-            exit 1
-          fi
-          echo "✅ All required secrets are configured"
-
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -57,19 +40,8 @@ jobs:
             echo "📦 Creating backup..."
             cd ~/ecommerce-microservice
             
-            # Check if MySQL container is running before backup
-            if docker-compose ps mysql | grep -q "Up"; then
-              BACKUP_FILE=~/backups/backup-$(date +%Y%m%d-%H%M%S).sql
-              docker-compose exec -T mysql mysqldump -u root -prootpassword ecommerce > $BACKUP_FILE
-              echo "✅ Database backup created: $BACKUP_FILE"
-              
-              # Keep only last 5 backups
-              cd ~/backups
-              ls -t backup-*.sql | tail -n +6 | xargs -r rm
-              echo "✅ Old backups cleaned up"
-            else
-              echo "⚠️  MySQL container not running, skipping backup"
-            fi
+            # Backup database
+            docker-compose exec -T mysql mysqldump -u root -prootpassword ecommerce > ~/backup-$(date +%Y%m%d-%H%M%S).sql || echo "Backup failed"
           ENDSSH
 
       - name: Deploy with zero-downtime
@@ -89,16 +61,6 @@ jobs:
             git fetch origin
             git checkout ${{ github.ref_name }}
             git pull origin ${{ github.ref_name }}
-            
-            # Create .env file with proper configuration
-            echo "⚙️  Creating environment configuration..."
-            PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
-            cat > .env << EOF
-NEXT_PUBLIC_PRODUCT_SERVICE_URL=http://${PUBLIC_IP}:8001
-NEXT_PUBLIC_PAYMENT_SERVICE_URL=http://${PUBLIC_IP}:8000
-CORS_ORIGIN=*
-EOF
-            echo "✅ Environment configuration created"
             
             # Build new images
             echo "🔨 Building new images..."
