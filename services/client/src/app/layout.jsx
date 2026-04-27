@@ -27,7 +27,7 @@ function Navigation() {
       <div className="flex items-center gap-4">
         <Image src="/logo.png" alt="logo" width={50} height={50} />
         <Link href="/" className="text-2xl font-black">
-          Lama Shop
+           Shop
         </Link>
       </div>
       <div className="flex items-center gap-6">
