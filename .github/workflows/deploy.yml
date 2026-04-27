@@ -38,21 +38,35 @@ jobs:
             echo "📥 Pulling latest code from GitHub..."
             git pull origin main
             
-            # Stop running containers
-            echo "🛑 Stopping current containers..."
-            docker-compose down
+            # Enable BuildKit for faster builds
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
             
-            # Remove old images to save space
+            # Build all services in parallel with BuildKit
+            echo "🔨 Building all services in parallel..."
+            docker-compose build --parallel
+            
+            # Rolling update: restart services one by one (zero downtime)
+            echo "🔄 Starting rolling update..."
+            
+            # Update infrastructure services first
+            docker-compose up -d mysql kafka
+            echo "⏳ Waiting for infrastructure..."
+            sleep 15
+            
+            # Update backend microservices in parallel
+            docker-compose up -d --no-deps product-service payment-service order-service email-service analytic-service
+            echo "⏳ Waiting for microservices..."
+            sleep 10
+            
+            # Update frontend last
+            docker-compose up -d --no-deps client
+            echo "⏳ Waiting for frontend..."
+            sleep 5
+            
+            # Clean up old images to save space
             echo "🧹 Cleaning up old images..."
-            docker system prune -f
-            
-            # Build and start containers
-            echo "🔨 Building and starting containers..."
-            docker-compose up -d --build
-            
-            # Wait for services to be healthy
-            echo "⏳ Waiting for services to start..."
-            sleep 30
+            docker image prune -f
             
             # Check if services are running
             echo "✅ Checking service health..."

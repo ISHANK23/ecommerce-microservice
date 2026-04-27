@@ -1,11 +1,17 @@
-FROM node:20-alpine
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
 
+# Stage 2: Production runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY package*.json ./
+ENV NODE_ENV=production
 
-RUN npm install --omit=dev
-
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 EXPOSE 8000
