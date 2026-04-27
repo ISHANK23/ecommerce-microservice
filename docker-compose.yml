@@ -84,6 +84,9 @@ services:
     build:
       context: ./services/product-service
       dockerfile: Dockerfile
+      cache_from:
+        - product-service:latest
+    image: product-service:latest
     container_name: product-service
     restart: unless-stopped
     ports:
@@ -105,6 +108,9 @@ services:
     build:
       context: ./services/payment-service
       dockerfile: Dockerfile
+      cache_from:
+        - payment-service:latest
+    image: payment-service:latest
     container_name: payment-service
     restart: unless-stopped
     ports:
@@ -122,6 +128,9 @@ services:
     build:
       context: ./services/order-service
       dockerfile: Dockerfile
+      cache_from:
+        - order-service:latest
+    image: order-service:latest
     container_name: order-service
     restart: unless-stopped
     environment:
@@ -136,6 +145,9 @@ services:
     build:
       context: ./services/analytic-service
       dockerfile: Dockerfile
+      cache_from:
+        - analytic-service:latest
+    image: analytic-service:latest
     container_name: analytic-service
     restart: unless-stopped
     environment:
@@ -150,6 +162,9 @@ services:
     build:
       context: ./services/email-service
       dockerfile: Dockerfile
+      cache_from:
+        - email-service:latest
+    image: email-service:latest
     container_name: email-service
     restart: unless-stopped
     environment:
@@ -166,9 +181,12 @@ services:
     build:
       context: ./services/client
       dockerfile: Dockerfile
+      cache_from:
+        - client:latest
       args:
         - NEXT_PUBLIC_PRODUCT_SERVICE_URL=${NEXT_PUBLIC_PRODUCT_SERVICE_URL:-http://localhost:8001}
         - NEXT_PUBLIC_PAYMENT_SERVICE_URL=${NEXT_PUBLIC_PAYMENT_SERVICE_URL:-http://localhost:8000}
+    image: client:latest
     container_name: client
     restart: unless-stopped
     ports:
