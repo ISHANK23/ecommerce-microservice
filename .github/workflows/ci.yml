@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         service:
           [
@@ -33,9 +34,19 @@ jobs:
           cache: "npm"
           cache-dependency-path: services/${{ matrix.service }}/package-lock.json
 
+      - name: Verify package files
+        working-directory: services/${{ matrix.service }}
+        run: |
+          echo "📦 Verifying package files for ${{ matrix.service }}..."
+          ls -la package.json package-lock.json
+          echo "✅ Package files found"
+
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
-        run: npm ci
+        run: |
+          echo "📥 Installing dependencies for ${{ matrix.service }}..."
+          npm ci
+          echo "✅ Dependencies installed successfully"
 
       - name: Run tests (if available)
         working-directory: services/${{ matrix.service }}
@@ -56,17 +67,32 @@ jobs:
           cache: "npm"
           cache-dependency-path: services/client/package-lock.json
 
+      - name: Verify package files
+        working-directory: services/client
+        run: |
+          echo "📦 Verifying client package files..."
+          ls -la package.json package-lock.json
+          echo "✅ Package files found"
+
       - name: Install dependencies
         working-directory: services/client
-        run: npm ci
+        run: |
+          echo "📥 Installing client dependencies..."
+          npm ci
+          echo "✅ Dependencies installed successfully"
 
       - name: Run ESLint
         working-directory: services/client
-        run: npm run lint
+        run: |
+          echo "🔍 Running ESLint..."
+          npm run lint
 
       - name: Build Next.js
         working-directory: services/client
-        run: npm run build
+        run: |
+          echo "🔨 Building Next.js application..."
+          npm run build
+          echo "✅ Build completed successfully"
 
   build-docker-images:
     name: Build Docker Images
@@ -74,6 +100,7 @@ jobs:
     needs: [test-services, test-client]
 
     strategy:
+      fail-fast: false
       matrix:
         service:
           [
@@ -104,4 +131,6 @@ jobs:
 
       - name: Test Docker image
         run: |
+          echo "🔍 Verifying Docker image for ${{ matrix.service }}..."
           docker images | grep ecommerce/${{ matrix.service }}
+          echo "✅ Docker image built successfully"
